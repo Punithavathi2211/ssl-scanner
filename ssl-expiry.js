@@ -1,4 +1,4 @@
-import tls from "tls";
+import getSSLCertificate from "get-ssl-certificate";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -11,33 +11,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const options = {
-      host: domain,
-      port: 443,
-      servername: domain,
-      rejectUnauthorized: false,
-    };
-
-    const socket = tls.connect(options, () => {
-      const cert = socket.getPeerCertificate();
-      socket.end();
-
-      if (!cert.valid_to) {
-        return res.status(500).json({ error: "Could not retrieve certificate" });
-      }
-
-      res.status(200).json({
-        domain,
-        expiresOn: cert.valid_to,
-        issuer: cert.issuer,
-        subject: cert.subject,
-      });
-    });
-
-    socket.on("error", (err) => {
-      res.status(500).json({ error: "TLS Error", details: err.message });
+    const cert = await getSSLCertificate.get(domain);
+    res.status(200).json({
+      domain,
+      expiresOn: cert.valid_to,
+      issuer: cert.issuer,
+      subject: cert.subject,
     });
   } catch (error) {
-    res.status(500).json({ error: "Unexpected error", details: error.message });
+    res.status(500).json({ error: "Failed to fetch SSL certificate", details: error.message });
   }
 }
