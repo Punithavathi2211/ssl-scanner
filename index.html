@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SSL Scanner</title>
+</head>
+<body>
+  <h1>SSL Scanner Tool</h1>
+  <input id="domain" placeholder="example.com" />
+  <button onclick="scan()">Scan</button>
+  <pre id="result"></pre>
+
+  <script>
+    async function scan() {
+      const domain = document.getElementById("domain").value;
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain })
+      });
+      const data = await res.json();
+      document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+    }
+  </script>
+</body>
+</html>
+
