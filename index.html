@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <title>🔐 Website Security Scanner</title>
   <style>
     body {
@@ -51,8 +51,8 @@
 
   <h1>🔐 Website Security Scanner</h1>
 
-  <input id="domain" placeholder="Enter domain (e.g. example.com)" />
-  <button onclick="scanAll()">Scan</button>
+  <input id="domainInput" type="text" placeholder="Enter domain (e.g. example.com)" />
+  <button onclick="scan()">Scan</button>
 
   <div class="results">
     <div class="result-item"><span class="label">SSL Grade:</span><span id="sslGrade" class="value">–</span></div>
@@ -60,63 +60,52 @@
     <div class="result-item"><span class="label">Security Headers Grade:</span><span id="headersGrade" class="value">–</span></div>
   </div>
 
- <script>
-  async function scanAll() {
-    const domainInput = document.getElementById("domain").value.trim();
-    const domain = domainInput.replace(/^https?:\/\//, "").split("/")[0];
+  <script>
+    function scan() {
+      const domainInput = document.getElementById("domainInput").value.trim();
+      const domain = domainInput.replace(/^https?:\/\//, "").split("/")[0];
 
-    if (!domain) {
-      alert("Please enter a domain.");
-      return;
+      if (!domain) {
+        alert("Please enter a domain.");
+        return;
+      }
+
+      // Reset all results
+      document.getElementById("sslGrade").textContent = "Checking...";
+      document.getElementById("sslExpiry").textContent = "Checking...";
+      document.getElementById("headersGrade").textContent = "Checking...";
+
+      // ✅ SSL Grade + Expiry from single API
+      fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("sslGrade").textContent = data.grade || "Unavailable";
+        document.getElementById("sslExpiry").textContent = data.expiresOn || "Unavailable";
+      })
+      .catch(() => {
+        document.getElementById("sslGrade").textContent = "Error";
+        document.getElementById("sslExpiry").textContent = "Error";
+      });
+
+      // ✅ Security Headers
+      fetch("/api/headers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("headersGrade").textContent = data.grade || "Unavailable";
+      })
+      .catch(() => {
+        document.getElementById("headersGrade").textContent = "Error";
+      });
     }
+  </script>
 
-    document.getElementById("sslGrade").textContent = "Checking...";
-    document.getElementById("sslExpiry").textContent = "Checking...";
-    document.getElementById("headersGrade").textContent = "Checking...";
-
-    // SSL Grade
-    fetch("/api/scan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ domain })
-    })
-    .then(res => res.json())
-    .then(data => {
-      const grade = data?.endpoints?.[0]?.grade || "Unavailable";
-      document.getElementById("sslGrade").textContent = grade;
-    })
-    .catch(() => {
-      document.getElementById("sslGrade").textContent = "Error";
-    });
-
-    // SSL Expiry
-    fetch("/api/ssl-expiry", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ domain })
-    })
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById("sslExpiry").textContent = data.expiresOn || "Unavailable";
-    })
-    .catch(() => {
-      document.getElementById("sslExpiry").textContent = "Error";
-    });
-
-    // Security Headers
-    fetch("/api/headers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ domain })
-    })
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById("headersGrade").textContent = data.grade || "Unavailable";
-    })
-    .catch(() => {
-      document.getElementById("headersGrade").textContent = "Error";
-    });
-  }
-</script>
 </body>
 </html>
