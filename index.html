@@ -60,65 +60,63 @@
     <div class="result-item"><span class="label">Security Headers Grade:</span><span id="headersGrade" class="value">–</span></div>
   </div>
 
-  <script>
-    async function scanAll() {
-      const domainInput = document.getElementById("domain").value.trim();
-      const domain = domainInput.replace(/^https?:\/\//, "").split("/")[0];
+ <script>
+  async function scanAll() {
+    const domainInput = document.getElementById("domain").value.trim();
+    const domain = domainInput.replace(/^https?:\/\//, "").split("/")[0];
 
-      if (!domain) {
-        alert("Please enter a domain.");
-        return;
-      }
-
-      document.getElementById("sslGrade").textContent = "Checking...";
-      document.getElementById("sslExpiry").textContent = "Checking...";
-      document.getElementById("headersGrade").textContent = "Checking...";
-
-      // SSL Grade
-      fetch("/api/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain })
-      })
-      .then(res => res.json())
-      .then(data => {
-        const grade = data?.endpoints?.[0]?.grade || "Unavailable";
-        document.getElementById("sslGrade").textContent = grade;
-      })
-      .catch(() => {
-        document.getElementById("sslGrade").textContent = "Error";
-      });
-
-      // SSL Expiry
-      fetch("https://your-vercel-url.vercel.app/api/ssl-expiry", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ domain: "indofrenchtech.com" })
-})
-.then(res => res.json())
-.then(data => {
-  document.getElementById("sslExpiry").textContent = data.expiresOn || "Unavailable";
-})
-.catch(() => {
-  document.getElementById("sslExpiry").textContent = "Error");
-});
-
-
-      // Security Headers
-      fetch("/api/headers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain })
-      })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("headersGrade").textContent = data.grade || "Unavailable";
-      })
-      .catch(() => {
-        document.getElementById("headersGrade").textContent = "Error";
-      });
+    if (!domain) {
+      alert("Please enter a domain.");
+      return;
     }
-  </script>
 
+    document.getElementById("sslGrade").textContent = "Checking...";
+    document.getElementById("sslExpiry").textContent = "Checking...";
+    document.getElementById("headersGrade").textContent = "Checking...";
+
+    // SSL Grade
+    fetch("/api/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain })
+    })
+    .then(res => res.json())
+    .then(data => {
+      const grade = data?.endpoints?.[0]?.grade || "Unavailable";
+      document.getElementById("sslGrade").textContent = grade;
+    })
+    .catch(() => {
+      document.getElementById("sslGrade").textContent = "Error";
+    });
+
+    // SSL Expiry
+    fetch("/api/ssl-expiry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("sslExpiry").textContent = data.expiresOn || "Unavailable";
+    })
+    .catch(() => {
+      document.getElementById("sslExpiry").textContent = "Error";
+    });
+
+    // Security Headers
+    fetch("/api/headers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("headersGrade").textContent = data.grade || "Unavailable";
+    })
+    .catch(() => {
+      document.getElementById("headersGrade").textContent = "Error";
+    });
+  }
+</script>
 </body>
 </html>
