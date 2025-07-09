@@ -1,30 +1,49 @@
+// File: api/ssl-expiry.js
+
+import tls from "tls";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Only POST allowed" });
   }
 
   const { domain } = req.body;
+
   if (!domain) {
     return res.status(400).json({ error: "Domain is required" });
   }
 
-  try {
-    const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    const response = await fetch(`https://api.devopsclub.in/api/ssl-check?domain=${cleanDomain}`);
-    const data = await response.json();
+  const host = domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
-    if (data && data.valid_to) {
-      res.status(200).json({
-        domain,
-        expiresOn: data.valid_to,
-        validFrom: data.valid_from,
-        issuer: data.issuer,
-        isValid: data.is_valid
-      });
-    } else {
-      res.status(500).json({ error: "Invalid response from SSL API" });
-    }
+  try {
+    const socket = tls.connect(
+      {
+        host,
+        port: 443,
+        servername: host,
+        rejectUnauthorized: false,
+      },
+      () => {
+        const cert = socket.getPeerCertificate();
+        socket.end();
+
+        if (!cert || !cert.valid_to) {
+          return res.status(500).json({ error: "Could not retrieve certificate" });
+        }
+
+        return res.status(200).json({
+          domain: host,
+          expiresOn: cert.valid_to,
+          issuer: cert.issuer,
+          subject: cert.subject,
+        });
+      }
+    );
+
+    socket.on("error", (err) => {
+      res.status(500).json({ error: "TLS Error", details: err.message });
+    });
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch SSL data", message: err.message });
+    res.status(500).json({ error: "Unexpected error", details: err.message });
   }
 }
