@@ -2,13 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>SSL Scanner Tool</title>
+  <title>🔐 Website Security Scanner</title>
   <style>
-    body { font-family: Arial; padding: 20px; max-width: 800px; margin: auto; }
-    input, button { padding: 10px; font-size: 16px; }
-    button { margin-left: 10px; }
-    .result { margin-top: 20px; background: #f9f9f9; padding: 15px; border: 1px solid #ddd; }
-    .label { font-weight: bold; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: auto;
+      background: #f9fafb;
+    }
+    h1 {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    button {
+      cursor: pointer;
+      background-color: #0070f3;
+      color: white;
+      border: none;
+    }
+    .results {
+      margin-top: 30px;
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .result-item {
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .label {
+      font-weight: bold;
+      color: #333;
+    }
+    .value {
+      margin-left: 10px;
+      color: #0070f3;
+    }
   </style>
 </head>
 <body>
@@ -18,23 +54,27 @@
   <input id="domain" placeholder="Enter domain (e.g. example.com)" />
   <button onclick="scanAll()">Scan</button>
 
-  <div class="result" id="sslGrade"></div>
-  <div class="result" id="headersGrade"></div>
-  <div class="result" id="expiryDate"></div>
+  <div class="results">
+    <div class="result-item"><span class="label">SSL Grade:</span><span id="sslGrade" class="value">–</span></div>
+    <div class="result-item"><span class="label">SSL Expiry:</span><span id="sslExpiry" class="value">–</span></div>
+    <div class="result-item"><span class="label">Security Headers Grade:</span><span id="headersGrade" class="value">–</span></div>
+  </div>
 
   <script>
     async function scanAll() {
-      const domain = document.getElementById("domain").value.trim();
+      const domainInput = document.getElementById("domain").value.trim();
+      const domain = domainInput.replace(/^https?:\/\//, "").split("/")[0];
+
       if (!domain) {
         alert("Please enter a domain.");
         return;
       }
 
-      document.getElementById("sslGrade").textContent = "Checking SSL Grade...";
-      document.getElementById("headersGrade").textContent = "Checking Security Headers...";
-      document.getElementById("expiryDate").textContent = "Checking SSL Expiry...";
+      document.getElementById("sslGrade").textContent = "Checking...";
+      document.getElementById("sslExpiry").textContent = "Checking...";
+      document.getElementById("headersGrade").textContent = "Checking...";
 
-      // SSL Grade (from /api/scan)
+      // SSL Grade
       fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -42,26 +82,14 @@
       })
       .then(res => res.json())
       .then(data => {
-        if (data.status === "READY") {
-          const grade = data.endpoints?.[0]?.grade || "Not found";
-          document.getElementById("sslGrade").innerHTML = `<span class="label">SSL Grade:</span> ${grade}`;
-        } else {
-          document.getElementById("sslGrade").textContent = "Still scanning or not ready.";
-        }
-      });
-
-      // Security Headers Grade
-      fetch("/api/headers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain })
+        const grade = data?.endpoints?.[0]?.grade || "Unavailable";
+        document.getElementById("sslGrade").textContent = grade;
       })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("headersGrade").innerHTML = `<span class="label">Security Headers Grade:</span> ${data.grade || "N/A"}`;
+      .catch(() => {
+        document.getElementById("sslGrade").textContent = "Error";
       });
 
-      // SSL Expiry Date
+      // SSL Expiry
       fetch("/api/ssl-expiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,11 +97,27 @@
       })
       .then(res => res.json())
       .then(data => {
-        document.getElementById("expiryDate").innerHTML = `<span class="label">SSL Certificate Expiry:</span> ${data.expiresOn || "Not available"}`;
+        document.getElementById("sslExpiry").textContent = data.expiresOn || "Unavailable";
+      })
+      .catch(() => {
+        document.getElementById("sslExpiry").textContent = "Error";
+      });
+
+      // Security Headers
+      fetch("/api/headers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("headersGrade").textContent = data.grade || "Unavailable";
+      })
+      .catch(() => {
+        document.getElementById("headersGrade").textContent = "Error";
       });
     }
   </script>
 
 </body>
 </html>
-
