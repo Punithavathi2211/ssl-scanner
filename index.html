@@ -90,18 +90,19 @@
       });
 
       // SSL Expiry
-      fetch("/api/ssl-expiry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain })
-      })
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("sslExpiry").textContent = data.expiresOn || "Unavailable";
-      })
-      .catch(() => {
-        document.getElementById("sslExpiry").textContent = "Error";
-      });
+      fetch("https://your-vercel-url.vercel.app/api/ssl-expiry", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ domain: "indofrenchtech.com" })
+})
+.then(res => res.json())
+.then(data => {
+  document.getElementById("sslExpiry").textContent = data.expiresOn || "Unavailable";
+})
+.catch(() => {
+  document.getElementById("sslExpiry").textContent = "Error");
+});
+
 
       // Security Headers
       fetch("/api/headers", {
